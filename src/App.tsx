@@ -7,6 +7,8 @@ import { AgenticWorkflowCanvas } from './components/workflow/AgenticWorkflowCanv
 import { IntegrationHub } from './components/integrations/IntegrationHub';
 import { UnifiedDashboard } from './components/analytics/UnifiedDashboard';
 import { LandingPage } from './components/landing/LandingPage';
+import { OnboardingWizard } from './components/onboarding/OnboardingWizard';
+import { TeamManager } from './components/workspace/TeamManager';
 
 import { 
   BrandContext, 
@@ -22,11 +24,12 @@ import { brandStoreService } from './services/brandStoreService';
 import { aiCampaignService } from './services/aiCampaignService';
 import { integrationHubService } from './services/integrationHubService';
 import { analyticsService } from './services/analyticsService';
+import { TenantOrg, UserProfile } from './services/authService';
 
 export const App: React.FC = () => {
   const [viewMode, setViewMode] = useState<'landing' | 'app'>('landing');
   const [isDarkMode, setIsDarkMode] = useState(true);
-  const [activeTab, setActiveTab] = useState<'planning' | 'studio' | 'workflow' | 'integrations' | 'analytics'>('planning');
+  const [activeTab, setActiveTab] = useState<'planning' | 'studio' | 'workflow' | 'integrations' | 'analytics' | 'team'>('planning');
   
   const [brandContext, setBrandContext] = useState<BrandContext>({
     id: 'brand-1',
@@ -46,7 +49,9 @@ export const App: React.FC = () => {
   const [channels, setChannels] = useState<IntegrationChannel[]>(integrationHubService.getChannels());
   const [analytics, setAnalytics] = useState<ChannelAnalytics[]>(analyticsService.getAnalytics());
   const [insights, setInsights] = useState<AIInsight[]>(analyticsService.getInsights());
+  
   const [isPlannerOpen, setIsPlannerOpen] = useState(false);
+  const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
 
   // Sync dark mode class on <html> element
   useEffect(() => {
@@ -85,6 +90,14 @@ export const App: React.FC = () => {
     setCampaignPlan(plan);
     setAssets(newAssets);
     setActiveTab('studio');
+  };
+
+  const handleOnboardingCompleted = (tenant: TenantOrg, user: UserProfile) => {
+    setBrandContext((prev) => ({
+      ...prev,
+      name: tenant.name
+    }));
+    setActiveTab('planning');
   };
 
   const handleUpdateAsset = (updatedAsset: AssetItem) => {
@@ -132,7 +145,7 @@ export const App: React.FC = () => {
         onGoToApp={() => setViewMode('app')}
         onSelectPlan={(plan) => {
           setViewMode('app');
-          setIsPlannerOpen(true);
+          setIsOnboardingOpen(true);
         }}
         isDarkMode={isDarkMode}
         onToggleTheme={toggleTheme}
@@ -163,6 +176,7 @@ export const App: React.FC = () => {
         setActiveTab={setActiveTab}
         brandContext={brandContext}
         onNewCampaignClick={() => setIsPlannerOpen(true)}
+        onOpenOnboarding={() => setIsOnboardingOpen(true)}
         isDarkMode={isDarkMode}
         onToggleTheme={toggleTheme}
       />
@@ -208,6 +222,10 @@ export const App: React.FC = () => {
           />
         )}
 
+        {activeTab === 'team' && (
+          <TeamManager />
+        )}
+
       </main>
 
       {/* AI Strategic Campaign Planner Modal */}
@@ -215,6 +233,13 @@ export const App: React.FC = () => {
         isOpen={isPlannerOpen}
         onClose={() => setIsPlannerOpen(false)}
         onCampaignGenerated={handleCampaignGenerated}
+      />
+
+      {/* Client Onboarding Wizard Modal */}
+      <OnboardingWizard
+        isOpen={isOnboardingOpen}
+        onClose={() => setIsOnboardingOpen(false)}
+        onCompleted={handleOnboardingCompleted}
       />
 
     </div>
